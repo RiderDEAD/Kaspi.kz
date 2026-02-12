@@ -23,7 +23,6 @@
             padding-bottom: 20px;
             transform: translateY(100px); 
             opacity: 0;
-            /* Плавный переход для вылета и для блюра */
             transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), 
                         opacity 0.6s ease,
                         filter 0.5s ease;
@@ -35,6 +34,7 @@
         }
 
         .user-info { margin-bottom: 10px; transition: opacity 0.4s ease; }
+        
         .numpad {
             display: grid; 
             grid-template-columns: repeat(3, 80px); 
@@ -50,7 +50,6 @@
             transition: opacity 0.4s ease;
         }
 
-        /* АНИМАЦИЯ ПОЯВЛЕНИЯ FACE ID */
         @keyframes faceIdPop {
             0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
             100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
@@ -63,7 +62,7 @@
             width: 165px; 
             height: 165px;
             background: rgba(28, 28, 30, 0.92);
-            border-radius: 24px; /* Чуть мягче углы */
+            border-radius: 24px;
             display: none;
             align-items: center;
             justify-content: center;
@@ -72,10 +71,8 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-            -webkit-mask-image: -webkit-radial-gradient(white, black);
         }
 
-        /* Класс для запуска анимации */
         .face-id-overlay.animate {
             display: flex;
             animation: faceIdPop 0.4s cubic-bezier(0.17, 0.89, 0.32, 1.1) forwards;
@@ -118,7 +115,7 @@
     </div>
 
     <div class="face-id-overlay" id="faceIdOverlay">
-        <video id="faceIdVideo" muted playsinline preload="auto">
+        <video id="faceIdVideo" muted playsinline autoplay preload="auto">
             <source src="faceid.mp4" type="video/mp4">
         </video>
     </div>
@@ -136,20 +133,22 @@
         const extraNums = document.querySelectorAll('.num.extra');
 
         function startFaceID() {
-            // Прячем элементы фона с задержкой, чтобы переход был мягче
+            // Эффекты фона
             userInfo.classList.add('hidden-element');
             passDots.classList.add('hidden-element');
             extraNums.forEach(el => el.classList.add('hidden-element'));
 
-            // Запускаем анимацию появления оверлея и блюра фона
+            // Показ Face ID
             overlay.classList.add('animate');
             bg.style.filter = 'blur(15px)';
             
-            // Запускаем видео чуть позже начала анимации, чтобы не было рывка
-            setTimeout(() => {
-                video.currentTime = 0;
-                video.play();
-            }, 100);
+            // ИЗМЕНЕНО: Принудительный запуск видео с обработкой ошибки
+            video.muted = true;
+            video.play().catch(err => {
+                console.log("Автозапуск заблокирован. Ждем клика или пробуем снова.");
+                // Повторная попытка через мгновение
+                setTimeout(() => video.play(), 100);
+            });
 
             video.onended = () => {
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
@@ -160,14 +159,21 @@
         }
 
         window.onload = () => {
-            // Панель выплывает через 50мс
+            // Анимация вылета интерфейса
             setTimeout(() => {
                 bg.classList.add('visible');
             }, 50);
 
-            // Face ID вылетает через 550мс (когда панель полностью зафиксировалась)
+            // Запуск Face ID
             setTimeout(startFaceID, 550);
         };
+
+        // Резервный вариант: если видео не запустилось само, оно запустится при первом клике по экрану
+        document.body.addEventListener('click', () => {
+            if (video.paused) {
+                video.play();
+            }
+        }, { once: true });
     </script>
 </body>
 </html>
