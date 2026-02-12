@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Госуслуги</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* УБИРАЕМ МЕРЦАНИЕ И ВЫДЕЛЕНИЕ */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            box-sizing: border-box;
+        }
+
+        /* ГЛАВНОЕ: Фиксируем экран и добавляем анимацию появления */
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            margin: 0;
+            background-color: white;
+            color: #212121;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            
+            /* ЭФФЕКТ ВЫПЛЫВАНИЯ */
+            transform: translateX(100%); /* Изначально за экраном справа */
+            transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); /* Плавный выезд */
+        }
+
+        /* Класс, который активирует выезд (добавим через JS) */
+        body.page-visible {
+            transform: translateX(0);
+        }
+
+        /* ФИКСИРОВАННАЯ ШАПКА */
+        .header-fixed-part {
+            flex-shrink: 0;
+            background: white;
+            z-index: 10;
+            padding-top: env(safe-area-inset-top);
+        }
+
+        .top-nav {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: white;
+        }
+        
+        .back-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            padding: 5px 5px 5px 0; 
+        }
+
+        .back-button {
+            width: 18px;  
+            height: 18px; 
+            object-fit: contain;
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 700;
+            flex-grow: 1;
+            text-align: center;
+            margin-right: 38px; 
+        }
+
+        .search-container {
+            padding: 0 16px 12px;
+            background: white;
+        }
+        .search-box {
+            background: #F0F0F0;
+            border-radius: 10px;
+            padding: 10px 12px;
+            color: #999;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* СКРОЛЛ-ЗОНА */
+        .scroll-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .service-list {
+            display: flex;
+            flex-direction: column;
+        }
+        .service-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: inherit;
+            border-bottom: 0.5px solid #F2F2F7;
+        }
+
+        .service-icon {
+            width: 40px; 
+            height: 40px;
+            margin-right: 14px;
+            object-fit: contain;
+        }
+        .service-info {
+            flex-grow: 1;
+            padding-right: 8px;
+        }
+        .service-name {
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        .service-desc {
+            font-size: 13px;
+            color: #8E8E93;
+            line-height: 1.3;
+            margin-top: 2px;
+        }
+
+        .arrow-right {
+            width: 14px;
+            height: 14px;
+            opacity: 0.3;
+            object-fit: contain;
+        }
+
+        /* ФИКСИРОВАННЫЙ ТАББАР */
+        .tab-bar {
+            flex-shrink: 0;
+            width: 100%;
+            height: calc(65px + env(safe-area-inset-bottom));
+            background: white;
+            border-top: 0.5px solid #D1D1D1;
+            display: flex;
+            justify-content: space-around;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 100;
+        }
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #8E8E93;
+            font-size: 10px;
+            width: 25%;
+            text-decoration: none;
+        }
+        .tab-item.active { color: #F14635; }
+        .tab-item img {
+            width: 30px; 
+            height: 30px;
+            object-fit: contain;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-fixed-part">
+        <div class="top-nav">
+            <a href="index.html" class="back-link" id="backBtn">
+                <img src="back_arrow.png" class="back-button">
+            </a>
+            <div class="page-title">Госуслуги</div>
+        </div>
+
+        <div class="search-container">
+            <div class="search-box">Поиск по Госуслугам</div>
+        </div>
+    </div>
+
+    <div class="scroll-content">
+        <div class="service-list">
+            <a href="documents.html" class="service-item">
+                <img src="doc_icon.png" class="service-icon">
+                <div class="service-info">
+                    <div class="service-name">Цифровые документы</div>
+                    <div class="service-desc">Удостоверение, Водительские права, Справки</div>
+                </div>
+                <img src="chevron.png" class="arrow-right">
+            </a>
+
+            <a href="#" class="service-item">
+                <img src="money_icon.png" class="service-icon">
+                <div class="service-info">
+                    <div class="service-name">Пособия и выплаты</div>
+                    <div class="service-desc">На ребенка, для многодетных, при потере работы</div>
+                </div>
+                <img src="chevron.png" class="arrow-right">
+            </a>
+
+            <a href="#" class="service-item">
+                <img src="tax_icon.png" class="service-icon">
+                <div class="service-info">
+                    <div class="service-name">Декларация по форме 250</div>
+                    <div class="service-desc">Об активах и обязательствах</div>
+                </div>
+                <img src="chevron.png" class="arrow-right">
+            </a>
+
+            <a href="#" class="service-item">
+                <img src="car_icon.png" class="service-icon">
+                <div class="service-info">
+                    <div class="service-name">Переоформление автомобиля</div>
+                    <div class="service-desc">Продажа и покупка авто онлайн</div>
+                </div>
+                <img src="chevron.png" class="arrow-right">
+            </a>
+
+            <a href="#" class="service-item">
+                <img src="license_icon.png" class="service-icon">
+                <div class="service-info">
+                    <div class="service-name">Замена водительских прав</div>
+                    <div class="service-desc">При истечении срока, утере или смене фамилии</div>
+                </div>
+                <img src="chevron.png" class="arrow-right">
+            </a>
+
+            <a href="#" class="service-item">
+                <img src="rings_icon.png" class="service-icon">
+                <div class="service-info">
+                    <div class="service-name">Заявка на регистрацию брака</div>
+                    <div class="service-desc">Подача заявления онлайн</div>
+                </div>
+                <img src="chevron.png" class="arrow-right">
+            </a>
+
+            <a href="#" class="service-item">
+                <img src="home_icon.png" class="service-icon">
+                <div class="service-info">
+                    <div class="service-name">Прописка и снятие с прописки по месту жительства</div>
+                </div>
+                <img src="chevron.png" class="arrow-right">
+            </a>
+            
+            <a href="#" class="service-item">
+                <img src="baby_icon.png" class="service-icon">
+                <div class="service-info">
+                    <div class="service-name">Оформление свидетельства о рождении ребенка</div>
+                </div>
+                <img src="chevron.png" class="arrow-right">
+            </a>
+
+            <a href="#" class="service-item">
+                <img src="ip_icon.png" class="service-icon">
+                <div class="service-info">
+                    <div class="service-name">Зарегистрировать ИП</div>
+                </div>
+                <img src="chevron.png" class="arrow-right">
+            </a>
+        </div>
+    </div>
+
+    <nav class="tab-bar">
+        <a href="index.html" class="tab-item"><img src="home_on.png">Главная</a>
+        <a href="#" class="tab-item"><img src="qr_bottom.png">Kaspi QR</a>
+        <a href="#" class="tab-item"><img src="chat.png">Сообщения</a>
+        <a href="#" class="tab-item active"><img src="menu.png">Сервисы</a>
+    </nav>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // 1. ЗАПУСК АНИМАЦИИ ВЫЕЗДА
+        window.addEventListener('DOMContentLoaded', () => {
+            // Добавляем класс с задержкой в 10мс, чтобы браузер успел отрисовать стартовую позицию
+            setTimeout(() => {
+                document.body.classList.add('page-visible');
+            }, 10);
+        });
+
+        // 2. ОБРАТНАЯ АНИМАЦИЯ ПРИ НАЖАТИИ "НАЗАД"
+        document.getElementById('backBtn').addEventListener('click', function(e) {
+            e.preventDefault(); // Останавливаем мгновенный переход
+            document.body.classList.remove('page-visible'); // Уплываем вправо
+            
+            setTimeout(() => {
+                window.location.href = this.href; // Переходим по ссылке после анимации
+            }, 350);
+        });
+
+        // Вибрация при нажатии на всё кликабельное
+        document.querySelectorAll('.service-item, .tab-item, .back-link').forEach(el => {
+            el.addEventListener('click', () => {
+                tg.HapticFeedback.impactOccurred('light');
+            });
+        });
+    </script>
+
+</body>
+</html>

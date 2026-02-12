@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kaspi">
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Kaspi.kz</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            box-sizing: border-box;
+        }
+
+        /* КРИТИЧНО ДЛЯ ЗАКРЕПЛЕНИЯ: Фиксируем высоту экрана */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden; /* Отключаем скролл у всего body */
+            background-color: #F2F2F7;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column; /* Элементы идут сверху вниз */
+            font-family: -apple-system, system-ui, sans-serif;
+            color: #212121;
+            user-select: none;
+        }
+
+        /* ЗАСТАВКА (Splash Screen) */
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        #splash-screen img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+
+        /* ФИКСИРОВАННАЯ ШАПКА */
+        header {
+            flex-shrink: 0; /* Шапка не должна сжиматься */
+            background: white;
+            padding-top: env(safe-area-inset-top); /* Учет челки iPhone */
+            z-index: 100;
+        }
+
+        .header-content {
+            padding: 10px 16px;
+        }
+
+        .search-bar {
+            background: #F0F0F0;
+            border-radius: 10px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            height: 40px; 
+        }
+
+        .search-icon-left { width: 18px; height: 18px; margin-right: 10px; flex-shrink: 0; }
+        .cart-icon-right { width: 22px; height: 22px; flex-shrink: 0; }
+        .search-text { color: #999; font-size: 15px; flex-grow: 1; }
+
+        /* СКРОЛЛ-ЗОНА: Только этот блок будет крутиться */
+        main {
+            flex-grow: 1; /* Занимает всё свободное место */
+            overflow-y: auto; /* Включаем вертикальный скролл */
+            -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+            padding-bottom: 20px;
+        }
+
+        .section { background: white; margin-bottom: 8px; }
+
+        /* Сетка иконок */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            row-gap: 16px; padding: 15px 10px;
+        }
+        .menu-item {
+            display: flex; flex-direction: column; align-items: center;
+            text-align: center; text-decoration: none; color: inherit;
+        }
+        .menu-item img { width: 32px; height: 32px; object-fit: contain; margin-bottom: 8px; }
+        .menu-item span { font-size: 12px; color: #333; line-height: 1.2; }
+
+        /* Баннеры */
+        .banners-container {
+            display: flex; overflow-x: auto; gap: 12px;
+            padding: 10px 16px 15px; background: white;
+        }
+        .banners-container::-webkit-scrollbar { display: none; }
+        .banner-item { flex: 0 0 43%; }
+        .banner-card { width: 100%; height: 100px; border-radius: 12px; overflow: hidden; margin-bottom: 6px; }
+        .banner-card img { width: 100%; height: 100%; object-fit: cover; }
+        .banner-date { font-size: 11px; color: #999; }
+
+        /* Кнопки Magnum/Red */
+        .wide-button {
+            display: flex; align-items: center; padding: 12px 16px;
+            background: white; border-bottom: 0.5px solid #F2F2F7;
+            text-decoration: none; color: inherit;
+        }
+        .wide-button img { width: 42px; height: 42px; margin-right: 12px; }
+        .wide-text b { font-size: 16px; font-weight: 600; display: block; }
+        .wide-text span { font-size: 13px; color: #8E8E93; }
+
+        .section-title { padding: 16px 16px 10px; font-size: 18px; font-weight: 800; }
+
+        /* ФИКСИРОВАННЫЙ ТАББАР */
+        nav.tab-bar {
+            flex-shrink: 0; /* Не сжимается */
+            width: 100%;
+            height: calc(65px + env(safe-area-inset-bottom));
+            background: white;
+            border-top: 0.5px solid #D1D1D1;
+            display: flex;
+            justify-content: space-around;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 100;
+        }
+        .tab-item {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; color: #8E8E93; font-size: 10px; width: 25%; text-decoration: none;
+        }
+        .tab-item.active { color: #F14635; }
+        .tab-item img { width: 30px; height: 30px; object-fit: contain; margin-bottom: 2px; }
+    </style>
+</head>
+<body>
+
+    <div id="splash-screen">
+        <img src="logo.png" alt="Kaspi Splash">
+    </div>
+
+    <header>
+        <div class="header-content">
+            <div class="search-bar">
+                <img src="search_icon.png" class="search-icon-left">
+                <div class="search-text">Поиск по Kaspi.kz</div>
+                <img src="cart_icon.png" class="cart-icon-right">
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="section" style="margin-bottom: 0;">
+            <div class="banners-container">
+                <div class="banner-item">
+                    <div class="banner-card"><img src="banner1.jpg"></div>
+                    <div class="banner-date">12 февраля - 7 марта</div>
+                </div>
+                <div class="banner-item">
+                    <div class="banner-card"><img src="banner2.jpg"></div>
+                    <div class="banner-date">12 февраля - 7 марта</div>
+                </div>
+                <div class="banner-item">
+                    <div class="banner-card"><img src="banner3.jpg"></div>
+                    <div class="banner-date">12 февраля - 7 марта</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="menu-grid">
+                <a href="qr_page.html" class="menu-item">
+                    <img src="qr.png" style="width: 47px; height: 47px;">
+                    <span>Kaspi QR</span>
+                </a>
+                <a href="bank_page.html" class="menu-item">
+                    <img src="bank.png" style="width: 37px; height: 37px;">
+                    <span>Мой Банк</span>
+                </a>
+                <a href="payments.html" class="menu-item">
+                    <img src="pay.png" style="width: 37px; height: 37px;">
+                    <span>Платежи</span>
+                </a>
+                <a href="transfers.html" class="menu-item">
+                    <img src="transfer.png" style="width: 32px; height: 32px;">
+                    <span>Переводы</span>
+                </a>
+                <a href="shop.html" class="menu-item">
+                    <img src="shop.png" style="width: 39px; height: 39px;">
+                    <span>Магазин</span>
+                </a>
+                <a href="travel.html" class="menu-item">
+                    <img src="travel.png" style="width: 39px; height: 49px;">
+                    <span>Travel</span>
+                </a>
+                <a href="auth.html" class="menu-item">
+                    <img src="gov.png" style="width: 43px; height: 43px;">
+                    <span>Госуслуги</span>
+                </a>
+                <a href="ads.html" class="menu-item">
+                    <img src="ads.png" style="width: 28px; height: 28px;">
+                    <span>Объявления</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="section">
+            <a href="magnum.html" class="wide-button">
+                <img src="magnum.png">
+                <div class="wide-text"><b>Magnum</b><span>Продукты питания с доставкой</span></div>
+            </a>
+            <a href="red.html" class="wide-button">
+                <img src="red.png">
+                <div class="wide-text"><b>Kaspi Red 0-0-4</b><span>Рассрочка до 500 000 ₸</span></div>
+            </a>
+        </div>
+
+        <div class="section-title">Вы недавно смотрели</div>
+        <div style="height: 100px; padding: 16px; color: #999;">Тут будут ваши товары...</div>
+    </main>
+
+    <nav class="tab-bar">
+        <a href="index.html" class="tab-item active"><img src="home_on.png">Главная</a>
+        <a href="#" class="tab-item"><img src="qr_bottom.png">Kaspi QR</a>
+        <a href="#" class="tab-item"><img src="chat.png">Сообщения</a>
+        <a href="services.html" class="tab-item"><img src="menu.png">Сервисы</a>
+    </nav>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.backgroundColor = '#F2F2F7';
+
+        // СКРЫТИЕ ЗАСТАВКИ
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                splash.style.opacity = '0';
+                setTimeout(() => splash.style.display = 'none', 500);
+            }, 250);
+        });
+        
+        document.querySelectorAll('.menu-item, .wide-button, .tab-item').forEach(el => {
+            el.onclick = () => tg.HapticFeedback.impactOccurred('light');
+        });
+    </script>
+</body>
+</html>

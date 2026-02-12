@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Цифровые документы</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* ИЗМЕНЕНО: Запомненный шрифт и глобальные настройки легкости */
+        :root {
+            --main-font: "SF Pro Display", "Roboto", "Helvetica Neue", Arial, sans-serif;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            box-sizing: border-box;
+            -webkit-font-smoothing: subpixel-antialiased;
+        }
+
+        html, body {
+            margin: 0; padding: 0;
+            height: 100vh; width: 100%;
+            overflow: hidden;
+            background-color: #F2F2F7;
+            /* ИЗМЕНЕНО: Применен основной шрифт */
+            font-family: var(--main-font);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%); 
+            transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
+        }
+
+        body.page-visible { transform: translateX(0); }
+
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.4s ease;
+        }
+        #splash-screen img { width: 100%; height: 100%; object-fit: cover; }
+
+        header {
+            flex-shrink: 0;
+            background: white;
+            padding-top: env(safe-area-inset-top);
+        }
+
+        .top-nav {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            height: 56px;
+        }
+
+        .back-btn {
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: flex-start;
+            text-decoration: none;
+            color: #000;
+        }
+
+        .back-arrow-svg {
+            width: 15px;
+            height: 15px;
+            border-left: 2.5px solid #000;
+            border-bottom: 2.5px solid #000;
+            transform: rotate(45deg);
+            margin-left: 4px;
+        }
+
+        .header-title {
+            flex-grow: 1;
+            text-align: center;
+            /* ИЗМЕНЕНО: Тонкая настройка заголовка */
+            font-size: 17px;
+            font-weight: 600;
+            margin-right: 32px;
+            letter-spacing: -0.2px;
+        }
+
+        .scroll-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 0 16px;
+        }
+
+        h1 {
+            /* ИЗМЕНЕНО: Размер заголовка */
+            font-size: 28px;
+            font-weight: 700;
+            margin: 20px 0 16px;
+            color: #000;
+            letter-spacing: -0.5px;
+        }
+
+        .docs-list {
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .doc-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            color: inherit;
+            border-bottom: 0.5px solid #F2F2F7;
+        }
+
+        .doc-item:active { background-color: #F9F9F9; }
+        .doc-item:last-child { border-bottom: none; }
+
+        .doc-icon-box {
+            width: 38px; height: 38px;
+            margin-right: 14px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .doc-icon-box img { width: 100%; height: 100%; object-fit: contain; }
+
+        .doc-info { 
+            flex-grow: 1; 
+            display: flex; 
+            align-items: center; 
+            min-width: 0;
+        }
+
+        .doc-name {
+            /* ИЗМЕНЕНО: Тот самый запомненный размер и шрифт */
+            font-size: 19px;
+            font-weight: 400;
+            color: #212121;
+            letter-spacing: -0.1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .badge-new {
+            background: #F14635;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 6px;
+            margin-left: 8px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        .doc-desc {
+            /* ИЗМЕНЕНО: Описание документов чуть крупнее и стройнее */
+            font-size: 14px;
+            color: #8E8E93;
+            margin-top: 2px;
+            line-height: 1.2;
+            font-weight: 400;
+        }
+
+        .chevron-box {
+            width: 20px; height: 20px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+
+        .chevron {
+            width: 10px; height: 10px;
+            border-top: 2px solid #C7C7CC;
+            border-right: 2px solid #C7C7CC;
+            transform: rotate(45deg);
+        }
+
+        .refresh-btn {
+            width: 100%;
+            background: white;
+            border: 1px solid #007AFF;
+            color: #007AFF;
+            border-radius: 12px;
+            padding: 14px;
+            /* ИЗМЕНЕНО: Шрифт кнопки под общий стиль */
+            font-size: 18px;
+            font-weight: 400;
+            text-align: center;
+            margin-top: 8px;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="splash-screen">
+        <img src="logo_2.png" alt="Kaspi Splash">
+    </div>
+
+    <header>
+        <div class="top-nav">
+            <a href="services.html" class="back-btn" id="backBtn">
+                <div class="back-arrow-svg"></div>
+            </a>
+            <div class="header-title">Цифровые документы</div>
+        </div>
+    </header>
+
+    <div class="scroll-content">
+        <h1>Мои документы</h1>
+
+        <div class="docs-list">
+            <a href="id_card.html" class="doc-item">
+                <div class="doc-icon-box"><img src="id_card_icon.jpg"></div>
+                <div class="doc-info">
+                    <div class="doc-name">Удостоверение личности</div>
+                </div>
+                <div class="chevron-box"><div class="chevron"></div></div>
+            </a>
+
+            <a href="#" class="doc-item">
+                <div class="doc-icon-box"><img src="baby_icon.png"></div>
+                <div class="doc-info">
+                    <div class="doc-name">Свидетельство о рождении</div>
+                    <span class="badge-new">NEW</span>
+                </div>
+                <div class="chevron-box"><div class="chevron"></div></div>
+            </a>
+
+            <a href="#" class="doc-item">
+                <div class="doc-icon-box"><img src="vax_icon.jpg"></div>
+                <div class="doc-info">
+                    <div class="doc-name">Паспорт вакцинации</div>
+                </div>
+                <div class="chevron-box"><div class="chevron"></div></div>
+            </a>
+
+            <a href="#" class="doc-item">
+                <div class="doc-icon-box"><img src="doc_icon.jpg"></div>
+                <div class="doc-info">
+                    <div class="doc-name">Сведения об образовании</div>
+                    <span class="badge-new">NEW</span>
+                </div>
+                <div class="chevron-box"><div class="chevron"></div></div>
+            </a>
+
+            <a href="#" class="doc-item">
+                <div class="doc-icon-box"><img src="doc_icon.jpg"></div>
+                <div class="doc-info" style="display: block; padding: 4px 0;">
+                    <div class="doc-name">Справки</div>
+                    <div class="doc-desc">Социальные, по недвижимости и медицинские</div>
+                </div>
+                <div class="chevron-box"><div class="chevron"></div></div>
+            </a>
+        </div>
+
+        <button class="refresh-btn" onclick="tg.HapticFeedback.impactOccurred('medium')">
+            Обновить список документов
+        </button>
+        
+        <div style="height: 40px;"></div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        window.addEventListener('load', () => {
+            document.body.classList.add('page-visible');
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                splash.style.opacity = '0';
+                setTimeout(() => splash.style.display = 'none', 400);
+            }, 600);
+        });
+
+        const backBtn = document.getElementById('backBtn');
+        if(backBtn) {
+            backBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                tg.HapticFeedback.impactOccurred('light');
+                document.body.classList.remove('page-visible');
+                setTimeout(() => {
+                    window.location.href = this.href;
+                }, 350);
+            });
+        }
+
+        document.querySelectorAll('.doc-item').forEach(el => {
+            el.addEventListener('click', () => tg.HapticFeedback.impactOccurred('light'));
+        });
+    </script>
+</body>
+</html>

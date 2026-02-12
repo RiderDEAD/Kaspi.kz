@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Kaspi Доступ</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            margin: 0; padding: 0;
+            font-family: -apple-system, system-ui, sans-serif;
+            background-color: #F2F2F7;
+            height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+            overflow: hidden;
+        }
+
+        .background-content {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column; 
+            align-items: center;
+            justify-content: center;
+            padding-bottom: 20px;
+            transform: translateY(100px); 
+            opacity: 0;
+            /* Плавный переход для вылета и для блюра */
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), 
+                        opacity 0.6s ease,
+                        filter 0.5s ease;
+        }
+
+        .background-content.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .user-info { margin-bottom: 10px; transition: opacity 0.4s ease; }
+        .numpad {
+            display: grid; 
+            grid-template-columns: repeat(3, 80px); 
+            gap: 15px 30px; 
+            justify-content: center;
+            margin-top: 50px;
+        }
+
+        .num {
+            width: 80px; height: 80px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 32px;
+            transition: opacity 0.4s ease;
+        }
+
+        /* АНИМАЦИЯ ПОЯВЛЕНИЯ FACE ID */
+        @keyframes faceIdPop {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .face-id-overlay {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 165px; 
+            height: 165px;
+            background: rgba(28, 28, 30, 0.92);
+            border-radius: 24px; /* Чуть мягче углы */
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            overflow: hidden; 
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            -webkit-mask-image: -webkit-radial-gradient(white, black);
+        }
+
+        /* Класс для запуска анимации */
+        .face-id-overlay.animate {
+            display: flex;
+            animation: faceIdPop 0.4s cubic-bezier(0.17, 0.89, 0.32, 1.1) forwards;
+        }
+
+        #faceIdVideo {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            mix-blend-mode: screen;
+            opacity: 0.9;
+        }
+
+        .hidden-element {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-content" id="bgContent">
+        <div class="user-info" id="userInfo">
+            <div style="width: 75px; height: 75px; border-radius: 50%; background: #E0E0E0; margin: 0 auto 15px;"></div>
+            <div style="font-size: 20px; font-weight: 600; text-align: center;">Икрам Я.</div>
+        </div>
+        
+        <div class="pass-dots" id="passDots" style="margin-top: 30px; display: flex; gap: 18px;">
+            <div style="width: 13px; height: 13px; border-radius: 50%; background: #D1D1D6;"></div>
+            <div style="width: 13px; height: 13px; border-radius: 50%; background: #D1D1D6;"></div>
+            <div style="width: 13px; height: 13px; border-radius: 50%; background: #D1D1D6;"></div>
+            <div style="width: 13px; height: 13px; border-radius: 50%; background: #D1D1D6;"></div>
+        </div>
+
+        <div class="numpad">
+            <div class="num">1</div><div class="num">2</div><div class="num">3</div>
+            <div class="num extra">4</div><div class="num extra">5</div><div class="num extra">6</div>
+            <div class="num extra">7</div><div class="num extra">8</div><div class="num extra">9</div>
+            <div class="num extra"></div><div class="num extra">0</div><div class="num extra">⌫</div>
+        </div>
+    </div>
+
+    <div class="face-id-overlay" id="faceIdOverlay">
+        <video id="faceIdVideo" muted playsinline preload="auto">
+            <source src="faceid.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const overlay = document.getElementById('faceIdOverlay');
+        const video = document.getElementById('faceIdVideo');
+        const bg = document.getElementById('bgContent');
+        
+        const userInfo = document.getElementById('userInfo');
+        const passDots = document.getElementById('passDots');
+        const extraNums = document.querySelectorAll('.num.extra');
+
+        function startFaceID() {
+            // Прячем элементы фона с задержкой, чтобы переход был мягче
+            userInfo.classList.add('hidden-element');
+            passDots.classList.add('hidden-element');
+            extraNums.forEach(el => el.classList.add('hidden-element'));
+
+            // Запускаем анимацию появления оверлея и блюра фона
+            overlay.classList.add('animate');
+            bg.style.filter = 'blur(15px)';
+            
+            // Запускаем видео чуть позже начала анимации, чтобы не было рывка
+            setTimeout(() => {
+                video.currentTime = 0;
+                video.play();
+            }, 100);
+
+            video.onended = () => {
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                setTimeout(() => {
+                    window.location.href = 'services.html';
+                }, 300);
+            };
+        }
+
+        window.onload = () => {
+            // Панель выплывает через 50мс
+            setTimeout(() => {
+                bg.classList.add('visible');
+            }, 50);
+
+            // Face ID вылетает через 550мс (когда панель полностью зафиксировалась)
+            setTimeout(startFaceID, 550);
+        };
+    </script>
+</body>
+</html>
